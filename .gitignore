@@ -1,0 +1,38 @@
+# === 配置文件（含敏感信息：API Keys）===
+config.json
+
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# === 工作区（用户数据，不应提交）===
+workspace/
+
+# === 日志与历史 ===
+*.log
+history.json
+*.bak
+*.tmp
+
+# === IDE / 编辑器 ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# === 操作系统 ===
+.DS_Store
+Thumbs.db
+
+# === 虚拟环境 ===
+.Python
+pip-log.txt
+pip-delete-this-directory.txt

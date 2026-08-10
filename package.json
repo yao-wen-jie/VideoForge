@@ -1,0 +1,9 @@
+{
+  "version": "2.0",
+  "description": "Video ShotCraft / VideoForge 视频自动化 Web 控制台",
+  "entry": "app.py",
+  "ui": "http://localhost:5000",
+  "requirements": "requirements.txt",
+  "author": "",
+  "license": "MIT"
+}

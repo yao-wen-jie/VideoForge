@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>视频自动化 Web 控制台</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="layout">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>🎬 视频自动化</h1>
+        <p>Web 控制台 v1.0</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-item active" data-page="dashboard">
+          <span class="icon">📊</span> 仪表盘
+        </div>
+        <div class="nav-item" data-page="director">
+          <span class="icon">🎬</span> 智能导演
+        </div>
+        <div class="nav-item" data-page="openmontage">
+          <span class="icon">🏭</span> OpenMontage
+        </div>
+        <div class="nav-item" data-page="replicate">
+          <span class="icon">🔥</span> 爆款复刻
+        </div>
+        <div class="nav-item" data-page="topics">
+          <span class="icon">💡</span> 每日选题
+        </div>
+        <div class="nav-item" data-page="cost">
+          <span class="icon">💰</span> 成本追踪
+        </div>
+        <div class="nav-item" data-page="shotcraft">
+          <span class="icon">🎞️</span> ShotCraft
+        </div>
+        <div class="nav-item" data-page="matrix">
+          <span class="icon">🔢</span> 选题矩阵
+        </div>
+        <div class="nav-item" data-page="scriptgen">
+          <span class="icon">✍️</span> AI脚本
+        </div>
+        <div class="nav-item" data-page="assets">
+          <span class="icon">🗂️</span> 素材库
+        </div>
+        <div class="nav-item" data-page="analytics">
+          <span class="icon">📈</span> 数据看板
+        </div>
+        <div class="nav-item" data-page="workflow">
+          <span class="icon">⚙️</span> 工作流
+        </div>
+        <div class="nav-item" data-page="skills">
+          <span class="icon">🛠️</span> Skill 工具
+        </div>
+        <div class="nav-item" data-page="outputs">
+          <span class="icon">📁</span> 成果库
+        </div>
+        <div class="nav-item" data-page="tasks">
+          <span class="icon">⚡</span> 任务管理
+        </div>
+        <div class="nav-item" data-page="settings">
+          <span class="icon">⚙️</span> 系统设置
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <span class="status-dot online" id="serverStatusDot"></span>
+        <span id="serverStatusText">服务在线</span>
+      </div>
+    </aside>
+
+    <!-- 主内容 -->
+    <main class="main">
+      <header class="main-header">
+        <h2 id="pageTitle">仪表盘</h2>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span class="tag tag-primary" id="taskCountBadge" style="display:none;">0 个任务运行中</span>
+        </div>
+      </header>
+
+      <div class="main-content" id="mainContent">
+        <!-- ===== 仪表盘 ===== -->
+        <div class="page" id="page-dashboard">
+          <div class="dashboard-grid">
+            <div class="stat-card">
+              <div class="stat-label">工作流目录</div>
+              <div class="stat-value" style="font-size:18px;" id="dashWorkflowPath">-</div>
+              <div class="stat-sub" id="dashWorkflowStatus"><span class="status-dot offline"></span> 未就绪</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">OpenMontage</div>
+              <div class="stat-value" style="font-size:18px;" id="dashOMPath">-</div>
+              <div class="stat-sub" id="dashOMStatus"><span class="status-dot offline"></span> 未就绪</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">GPU 加速</div>
+              <div class="stat-value" id="dashGPU">检测中...</div>
+              <div class="stat-sub" id="dashGPUSub">NVIDIA 显卡状态</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">FFmpeg</div>
+              <div class="stat-value" id="dashFFmpeg">检测中...</div>
+              <div class="stat-sub" id="dashFFmpegSub">视频处理引擎</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">🔑 API 密钥状态</div>
+            <div id="apiKeyStatusGrid" style="display:flex;flex-wrap:wrap;gap:10px;">
+              <!-- JS 填充 -->
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">📜 最近操作</div>
+            <div id="historyList" style="max-height:300px;overflow-y:auto;">
+              <p style="color:var(--text-muted);font-size:13px;">加载中...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== 智能导演 ===== -->
+        <div class="page hidden" id="page-director">
+          <div class="card">
+            <div class="card-title">🎬 智能视频导演</div>
+            <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+              输入主题，AI 自动为脚本/分镜/素材/配音/剪辑/字幕选择最优方案
+            </p>
+            <div class="form-group">
+              <label>视频主题 / 文案</label>
+              <input type="text" id="dirTopic" placeholder="例如：成年人的崩溃从静音开始">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>风格预设</label>
+                <select id="dirStyle">
+                  <option value="auto">🤖 自动选择（推荐）</option>
+                  <option value="factory">🏭 情感治愈工厂（低成本）</option>
+                  <option value="documentary">📹 纪录片蒙太奇</option>
+                  <option value="yaosheng">🎙️ 姚生方案 C</option>
+                  <option value="premium">✨ 剪映 Seedance（高质量）</option>
+                  <option value="vibe">🎨 VibeFilming 一句话出片</option>
+                  <option value="avatar">👤 真人 AI 数字人口播</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>预算上限（元）</label>
+                <input type="number" id="dirBudget" value="10" min="1" max="100">
+              </div>
+              <div class="form-group">
+                <label>目标时长（秒，可选）</label>
+                <input type="number" id="dirDuration" placeholder="自动">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>参考视频链接（复刻模式，可选）</label>
+              <input type="text" id="dirRefUrl" placeholder="https://v.douyin.com/xxxxx">
+            </div>
+            <div class="form-group">
+              <label class="checkbox-group">
+                <input type="checkbox" id="dirDynamic"> 优先使用真实动态镜头（Wan/Seedance，预算需 ≥10元）
+              </label>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:8px;">
+              <button class="btn btn-secondary" onclick="directorPlan()">
+                📋 预览方案（dry-run）
+              </button>
+              <button class="btn btn-primary" onclick="directorRun()">
+                🚀 开始执行
+              </button>
+            </div>
+          </div>
+          <div class="card hidden" id="dirOutputCard">
+            <div class="card-title">📤 输出</div>
+            <div class="terminal" id="dirOutput"></div>
+          </div>
+        </div>
+
+        <!-- ===== OpenMontage ===== -->
+        <div class="page hidden" id="page-openmontage">
+          <div class="card">
+            <div class="card-title">🏭 OpenMontage 视频工厂</div>
+            <div class="tabs">
+              <div class="tab active" data-tab="om-factory">情感治愈工厂</div>
+              <div class="tab" data-tab="om-yaosheng">姚生方案 C</div>
+              <div class="tab" data-tab="om-documentary">纪录片蒙太奇</div>
+              <div class="tab" data-tab="om-replicate">爆款复刻</div>
+              <div class="tab" data-tab="om-preflight">环境预检</div>
+            </div>
+
+            <div id="tab-om-factory">
+              <div class="form-group">
+                <label>视频主题</label>
+                <input type="text" id="omFactoryTopic" placeholder="输入主题文案">
+              </div>
+              <button class="btn btn-primary" onclick="runOpenMontage('factory')">🏃 运行工厂</button>
+            </div>
+
+            <div id="tab-om-yaosheng" class="hidden">
+              <div class="form-group">
+                <label>选题 ID</label>
+                <input type="text" id="omYaoshengId" placeholder="如 YS006">
+              </div>
+              <div class="form-group">
+                <label class="checkbox-group">
+                  <input type="checkbox" id="omYaoshengWan"> 启用 WAN I2V 动态镜头
+                </label>
+              </div>
+              <button class="btn btn-primary" onclick="runOpenMontage('yaosheng')">🏃 运行姚生方案</button>
+            </div>
+
+            <div id="tab-om-documentary" class="hidden">
+              <div class="form-group">
+                <label>纪录片主题</label>
+                <input type="text" id="omDocTopic" placeholder="例如：城市凌晨四点的声音">
+              </div>
+              <button class="btn btn-primary" onclick="runOpenMontage('documentary')">🏃 运行纪录片</button>
+            </div>
+
+            <div id="tab-om-replicate" class="hidden">
+              <div class="form-group">
+                <label>参考视频链接</label>
+                <input type="text" id="omReplicateUrl" placeholder="https://v.douyin.com/xxxxx">
+              </div>
+              <button class="btn btn-primary" onclick="runOpenMontage('replicate')">🏃 运行复刻</button>
+            </div>
+
+            <div id="tab-om-preflight" class="hidden">
+              <button class="btn btn-primary" onclick="runOpenMontage('preflight')">🔍 运行环境预检</button>
+            </div>
+          </div>
+          <div class="card hidden" id="omOutputCard">
+            <div class="card-title">📤 输出</div>
+            <div class="terminal" id="omOutput"></div>
+          </div>
+        </div>
+
+        <!-- ===== 爆款复刻 ===== -->
+        <div class="page hidden" id="page-replicate">
+          <div class="card">
+            <div class="card-title">🔥 一键复刻爆款视频</div>
+            <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+              粘贴抖音/YouTube/B站链接 → 自动解析 → 反向拆解 → 生成同风格新视频
+            </p>
+            <div class="form-group">
+              <label>爆款视频链接</label>
+              <input type="text" id="repUrl" placeholder="https://v.douyin.com/xxxxx">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>镜头时长（秒）</label>
+                <input type="number" id="repShotDuration" value="4" min="1" max="10">
+              </div>
+              <div class="form-group">
+                <label>结尾搜索名（可选）</label>
+                <input type="text" id="repSearchName" placeholder="你的抖音号">
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:8px;">
+              <button class="btn btn-secondary" onclick="replicateAnalyze()">
+                🔍 分析拆解（dry-run）
+              </button>
+              <button class="btn btn-success" onclick="replicateRun()">
+                🚀 确认复刻（会产生 API 费用）
+              </button>
+            </div>
+          </div>
+          <div class="card hidden" id="repOutputCard">
+            <div class="card-title">📤 输出</div>
+            <div class="terminal" id="repOutput"></div>
+          </div>
+        </div>
+
+        <!-- ===== 每日选题 ===== -->
+        <div class="page hidden" id="page-topics">
+          <div class="card">
+            <div class="card-title">💡 每日选题推荐</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>候选数量</label>
+                <input type="number" id="topicCount" value="3" min="1" max="10">
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="getDailyTopics()">🎲 获取今日选题</button>
+            <div class="terminal" id="topicOutput" style="margin-top:16px;display:none;"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">📚 选题池</div>
+            <div id="topicPoolList">
+              <p style="color:var(--text-muted);font-size:13px;">点击上方按钮加载选题池...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== 成本追踪 ===== -->
+        <div class="page hidden" id="page-cost">
+          <div class="card">
+            <div class="card-title">💰 费用汇总</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>时间范围</label>
+                <select id="costDays" onchange="loadCostSummary()">
+                  <option value="">全部</option>
+                  <option value="7">最近 7 天</option>
+                  <option value="30">最近 30 天</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="loadCostSummary()">📊 刷新汇总</button>
+            <div class="terminal" id="costOutput" style="margin-top:16px;display:none;"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">➕ 手动记录费用</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>选题 ID</label>
+                <input type="text" id="costTopicId" placeholder="YS001">
+              </div>
+              <div class="form-group">
+                <label>标题</label>
+                <input type="text" id="costTitle" placeholder="视频标题">
+              </div>
+              <div class="form-group">
+                <label>模式</label>
+                <select id="costMode">
+                  <option value="seedance">Seedance</option>
+                  <option value="factory">情感工厂</option>
+                  <option value="wan">WAN I2V</option>
+                  <option value="yaosheng">姚生方案</option>
+                  <option value="documentary">纪录片</option>
+                  <option value="other">其他</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>费用（元）</label>
+                <input type="number" id="costAmount" value="0" step="0.01">
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="addCostRecord()">💾 记录费用</button>
+          </div>
+        </div>
+
+        <!-- ===== Skill 工具 ===== -->
+        <div class="page hidden" id="page-skills">
+          <div class="card">
+            <div class="card-title">🛠️ Skill Hub 工具箱</div>
+            <div class="tabs">
+              <div class="tab active" data-tab="skill-parse">视频解析</div>
+              <div class="tab" data-tab="skill-transcribe">语音转录</div>
+            </div>
+
+            <div id="tab-skill-parse">
+              <div class="form-group">
+                <label>视频链接</label>
+                <input type="text" id="skillParseUrl" placeholder="https://v.douyin.com/xxxxx">
+              </div>
+              <div class="form-group">
+                <label class="checkbox-group">
+                  <input type="checkbox" id="skillParseDownload"> 同时下载视频
+                </label>
+              </div>
+              <button class="btn btn-primary" onclick="runSkill('parse')">🔍 解析</button>
+            </div>
+
+            <div id="tab-skill-transcribe" class="hidden">
+              <div class="form-group">
+                <label>视频链接</label>
+                <input type="text" id="skillTranscribeUrl" placeholder="https://v.douyin.com/xxxxx">
+              </div>
+              <button class="btn btn-primary" onclick="runSkill('transcribe')">📝 转录</button>
+            </div>
+          </div>
+          <div class="card hidden" id="skillOutputCard">
+            <div class="card-title">📤 输出</div>
+            <div class="terminal" id="skillOutput"></div>
+          </div>
+        </div>
+
+        <!-- ===== 成果库 ===== -->
+        <div class="page hidden" id="page-outputs">
+          <div class="card">
+            <div class="card-title" style="justify-content:space-between;">
+              <span>📁 生成成果</span>
+              <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="loadOutputs()">🔄 刷新</button>
+            </div>
+            <div class="video-grid" id="outputsGrid">
+              <p style="color:var(--text-muted);font-size:13px;grid-column:1/-1;">加载中...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== 任务管理 ===== -->
+        <div class="page hidden" id="page-tasks">
+          <div class="card">
+            <div class="card-title" style="justify-content:space-between;">
+              <span>⚡ 运行中的任务</span>
+              <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="loadTasks()">🔄 刷新</button>
+            </div>
+            <div id="tasksList">
+              <p style="color:var(--text-muted);font-size:13px;">暂无运行中任务</p>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ===== ShotCraft 镜头配方卡 ===== -->
+        <div class="page hidden" id="page-shotcraft">
+          <div class="card">
+            <div class="card-title" style="justify-content:space-between;">
+              <span>🎞️ Video ShotCraft — 镜头配方卡库</span>
+              <div style="display:flex;gap:8px;">
+                <a href="https://vincentwei1021.github.io/video-shotcraft/" target="_blank" class="btn btn-secondary" style="padding:6px 12px;font-size:12px;text-decoration:none;">🌐 在线 Gallery</a>
+                <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="loadShotCraftLibrary()">🔄 刷新</button>
+              </div>
+            </div>
+            <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+              104 张镜头配方卡 · 161 个动态样式 · 电影感产品视频制作系统。选择镜头卡，生成你的分镜方案。
+            </p>
+
+            <!-- 搜索和筛选 -->
+            <div class="form-row">
+              <div class="form-group">
+                <label>搜索镜头卡</label>
+                <input type="text" id="scSearch" placeholder="输入关键词搜索..." oninput="searchShotCraft()">
+              </div>
+              <div class="form-group">
+                <label>分类筛选</label>
+                <select id="scCategory" onchange="searchShotCraft()">
+                  <option value="">全部分类</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>能量等级</label>
+                <select id="scEnergy" onchange="searchShotCraft()">
+                  <option value="">全部</option>
+                  <option value="低">低能量</option>
+                  <option value="中">中能量</option>
+                  <option value="高">高能量</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 已选镜头 -->
+            <div class="card" style="background:var(--bg);margin-top:12px;">
+              <div class="card-title" style="font-size:13px;margin-bottom:8px;">
+                📋 已选镜头 (<span id="scSelectedCount">0</span>)
+                <button class="btn btn-danger" style="padding:4px 10px;font-size:11px;margin-left:10px;" onclick="clearSelectedShots()">清空</button>
+                <button class="btn btn-success" style="padding:4px 10px;font-size:11px;margin-left:6px;" onclick="generateShotPlan()">🎬 生成分镜方案</button>
+              </div>
+              <div id="scSelectedList" style="display:flex;flex-wrap:wrap;gap:6px;">
+                <span style="color:var(--text-muted);font-size:12px;">点击卡片上的 + 号添加镜头</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 镜头卡网格 -->
+          <div class="card">
+            <div class="card-title">🃏 镜头配方卡</div>
+            <div id="scCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+              <p style="color:var(--text-muted);font-size:13px;grid-column:1/-1;">加载中...</p>
+            </div>
+          </div>
+
+          <!-- 分镜方案输出 -->
+          <div class="card hidden" id="scPlanOutputCard">
+            <div class="card-title">📤 分镜方案</div>
+            <div class="terminal" id="scPlanOutput"></div>
+          </div>
+        </div>
+
+
+        <!-- ===== 工作流 ===== -->
+        <div class="page hidden" id="page-workflow">
+          <div class="card">
+            <div class="card-title">🔧 脚本执行引擎</div>
+            <p style="color:#8899aa;margin-bottom:12px;">点击下方卡片运行对应脚本，实时查看输出日志</p>
+            <div class="workflow-grid" id="workflowScriptsGrid">
+              <!-- JS 填充脚本卡片 -->
+            </div>
+          </div>
+
+          <div class="card hidden" id="workflowLogCard">
+            <div class="card-title">📋 任务日志 <span id="wfLogTaskName" style="color:#4fc3f7;"></span></div>
+            <div style="display:flex;gap:10px;margin-bottom:10px;">
+              <button class="btn btn-sm btn-danger" onclick="killWorkflowTask()">⏹ 终止</button>
+              <button class="btn btn-sm btn-secondary" onclick="clearWorkflowLog()">🗑 清空</button>
+            </div>
+            <div class="terminal-output" id="workflowLogOutput" style="max-height:400px;overflow:auto;"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">📊 环境检查</div>
+            <div id="envCheckResults" style="display:flex;flex-wrap:wrap;gap:10px;">
+              <button class="btn btn-primary" onclick="runEnvCheck()">🔧 一键检查环境</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== 成果浏览器 ===== -->
+        <div class="page hidden" id="page-outputs-v2">
+          <div class="card">
+            <div class="card-title">📁 生成成果</div>
+            <div id="outputsBrowser" style="display:flex;flex-wrap:wrap;gap:15px;">
+              <!-- JS 填充 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== 选题矩阵 ===== -->
+        <div class="page hidden" id="page-matrix">
+          <div class="card">
+            <div class="card-title">🔢 选题矩阵生成器</div>
+            <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+              对象 + 痛点 + 解决方案 + 情绪钩子 = 爆款选题。一次生成10-30个选题。
+            </p>
+            <div class="form-row">
+              <div class="form-group">
+                <label>赛道分类</label>
+                <select id="matrixCategory">
+                  <option value="emotional">💝 情感治愈</option>
+                  <option value="career">💼 职场干货</option>
+                  <option value="tech">🤖 AI科技</option>
+                  <option value="life">🌱 人生哲理</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>生成数量</label>
+                <input type="number" id="matrixCount" value="10" min="5" max="30">
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="generateMatrix()">🎲 生成选题矩阵</button>
+          </div>
+          <div class="card hidden" id="matrixResultsCard">
+            <div class="card-title">📋 选题结果</div>
+            <div id="matrixResults"></div>
+          </div>
+        </div>
+
+        <!-- ===== AI脚本生成 ===== -->
+        <div class="page hidden" id="page-scriptgen">
+          <div class="card">
+            <div class="card-title">✍️ AI 脚本生成器</div>
+            <div class="tabs">
+              <div class="tab active" data-tab="sg-outline">脚本大纲</div>
+              <div class="tab" data-tab="sg-ai">DeepSeek AI生成</div>
+            </div>
+            <div id="tab-sg-outline">
+              <div class="form-group">
+                <label>视频主题</label>
+                <input type="text" id="sgTopic" placeholder="例如：成年人的崩溃从静音开始">
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>脚本模板</label>
+                  <select id="sgTemplate">
+                    <option value="hook_scene_turn_punchline_cta">黄金五段式（通用爆款）</option>
+                    <option value="problem_agitate_solution">痛点放大式</option>
+                    <option value="story_lesson_action">故事启发式</option>
+                    <option value="data_insight_prediction">数据洞察式</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>目标时长（秒）</label>
+                  <input type="number" id="sgDuration" value="30" min="15" max="120">
+                </div>
+                <div class="form-group">
+                  <label>风格</label>
+                  <select id="sgStyle">
+                    <option value="口播">口播</option>
+                    <option value="剧情">剧情</option>
+                    <option value="知识">知识</option>
+                    <option value="Vlog">Vlog</option>
+                  </select>
+                </div>
+              </div>
+              <button class="btn btn-primary" onclick="generateScriptOutline()">📋 生成大纲</button>
+              <div class="terminal hidden" id="sgOutlineOutput" style="margin-top:16px;"></div>
+            </div>
+            <div id="tab-sg-ai" class="hidden">
+              <div class="form-group">
+                <label>视频主题</label>
+                <input type="text" id="sgAiTopic" placeholder="输入主题，AI自动生成完整脚本">
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>风格</label>
+                  <select id="sgAiStyle">
+                    <option value="口播">口播</option>
+                    <option value="剧情">剧情</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>时长（秒）</label>
+                  <input type="number" id="sgAiDuration" value="30" min="15" max="120">
+                </div>
+              </div>
+              <button class="btn btn-success" onclick="generateScriptWithAI()">🤖 DeepSeek AI生成脚本</button>
+              <div class="terminal hidden" id="sgAiOutput" style="margin-top:16px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== 素材库 ===== -->
+        <div class="page hidden" id="page-assets">
+          <div class="card">
+            <div class="card-title" style="justify-content:space-between;">
+              <span>🗂️ 素材库</span>
+              <div style="display:flex;gap:8px;">
+                <select id="assetTypeFilter" onchange="loadAssets()">
+                  <option value="">全部</option>
+                  <option value="video">🎬 视频</option>
+                  <option value="image">🖼️ 图片</option>
+                  <option value="audio">🎵 音频</option>
+                  <option value="script">📝 脚本</option>
+                </select>
+                <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="loadAssets()">🔄 刷新</button>
+              </div>
+            </div>
+            <div id="assetsStats" style="display:flex;gap:15px;margin-bottom:15px;"></div>
+            <div id="assetsList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;"></div>
+          </div>
+        </div>
+
+        <!-- ===== 数据看板 ===== -->
+        <div class="page hidden" id="page-analytics">
+          <div class="card">
+            <div class="card-title" style="justify-content:space-between;">
+              <span>📈 数据看板</span>
+              <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="loadDashboardStats()">🔄 刷新</button>
+            </div>
+            <div id="analyticsContainer">
+              <p style="color:var(--text-muted);font-size:13px;">加载中...</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">🚀 发布统计</div>
+            <div id="publishStatsContainer"></div>
+          </div>
+        </div>
+
+        <!-- ===== 系统设置 ===== -->
+        <div class="page hidden" id="page-settings">
+          <div class="card">
+            <div class="card-title">📁 路径配置</div>
+            <div class="form-group">
+              <label>视频自动化工作流目录</label>
+              <input type="text" id="cfgWorkflowRoot" placeholder="自动计算（基于项目目录）">
+            </div>
+            <div class="form-group">
+              <label>OpenMontage 根目录</label>
+              <input type="text" id="cfgOMRoot" placeholder="C:/Users/.../OpenMontage">
+            </div>
+            <div class="form-group">
+              <label>VibeFilming 根目录</label>
+              <input type="text" id="cfgVibeRoot" placeholder="C:/Users/.../Vibefilming">
+            </div>
+            <div class="form-group">
+              <label>Skills 根目录</label>
+              <input type="text" id="cfgSkillsRoot" placeholder="C:/Users/.../.kimi-code/skills">
+            </div>
+            <div class="form-group">
+              <label>输出目录</label>
+              <input type="text" id="cfgOutputDir" placeholder="C:/Users/.../01-生成成果">
+            </div>
+            <div class="form-group">
+              <label>每日预算上限（元）</label>
+              <input type="number" id="cfgBudget" value="50" step="1">
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">🔑 API 密钥配置</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>DashScope</label>
+                <input type="password" id="cfgKeyDashscope" placeholder="sk-...">
+              </div>
+              <div class="form-group">
+                <label>DeepSeek</label>
+                <input type="password" id="cfgKeyDeepseek" placeholder="sk-...">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>OpenAI</label>
+                <input type="password" id="cfgKeyOpenAI" placeholder="sk-...">
+              </div>
+              <div class="form-group">
+                <label>ElevenLabs</label>
+                <input type="password" id="cfgKeyElevenlabs" placeholder="...">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Google</label>
+                <input type="password" id="cfgKeyGoogle" placeholder="...">
+              </div>
+              <div class="form-group">
+                <label>Pixabay</label>
+                <input type="password" id="cfgKeyPixabay" placeholder="...">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Pexels</label>
+                <input type="password" id="cfgKeyPexels" placeholder="...">
+              </div>
+              <div class="form-group">
+                <label>Seedance</label>
+                <input type="password" id="cfgKeySeedance" placeholder="...">
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-primary" onclick="saveSettings()">💾 保存配置</button>
+            <button class="btn btn-secondary" onclick="loadSettings()">🔄 重新加载</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast 容器 -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
