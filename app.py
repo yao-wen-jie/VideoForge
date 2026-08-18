@@ -15,6 +15,29 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from threading import Thread
 
+# 修复 Windows Git Bash 等终端的 UTF-8 编码问题
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except Exception:
+    pass
+
+from flask import Flask, jsonify, render_template, request
+# -*- coding: utf-8 -*-
+"""
+视频自动化 Web 控制台 —— Video ShotCraft 整合模块
+基于 video-shotcraft (Vincentwei1021/video-shotcraft) 的镜头配方卡系统
+"""
+
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+from datetime import datetime, timedelta
+from pathlib import Path
+from threading import Thread
+
 from flask import Flask, jsonify, render_template, request
 
 # 工作流引擎
@@ -35,6 +58,12 @@ from enhanced_features import (
     list_assets, get_video_fingerprint, check_duplicate_videos,
     load_scheduled_tasks, save_scheduled_tasks, add_scheduled_task, delete_scheduled_task,
     get_dashboard_stats, get_mix_configs, load_publish_log, get_publish_stats,
+)
+# 配音模块
+from voiceforge_tts import (
+    synthesize, get_engine_status, get_all_voices,
+    list_reference_voices, save_reference_audio, delete_reference_voice,
+    VOICE_OUTPUT_DIR, VOICE_DIR,
 )
 
 
@@ -1055,6 +1084,96 @@ def workflow_env_check():
     return jsonify(check_environment())
 
 
+
+
+# ---------------------- 配音模块 API ----------------------
+
+@app.route("/api/voice/engines")
+def voice_engines():
+    """获取所有 TTS 引擎状态"""
+    return jsonify(get_engine_status())
+
+
+@app.route("/api/voice/voices")
+def voice_voices():
+    """获取所有可用音色列表"""
+    return jsonify(get_all_voices())
+
+
+@app.route("/api/voice/synthesize", methods=["POST"])
+def voice_synthesize():
+    """语音合成主接口"""
+    data = request.get_json() or {}
+    text = data.get("text", "").strip()
+    if not text:
+        return jsonify({"success": False, "error": "文本不能为空"}), 400
+
+    engine = data.get("engine", "auto")
+    voice = data.get("voice")
+    rate = data.get("rate", "+0%")
+    speed = data.get("speed", 1.0)
+
+    if engine == "gpt-sovits":
+        refer_wav = data.get("refer_wav_path", "")
+        prompt_text = data.get("prompt_text", "")
+        prompt_lang = data.get("prompt_lang", "zh")
+        text_lang = data.get("text_lang", "zh")
+        result = synthesize(
+            text, engine="gpt-sovits",
+            refer_wav_path=refer_wav, prompt_text=prompt_text,
+            prompt_lang=prompt_lang, text_lang=text_lang
+        )
+    else:
+        result = synthesize(text, engine=engine, voice=voice, rate=rate, speed=speed)
+
+    return jsonify(result)
+
+
+@app.route("/api/voice/upload-reference", methods=["POST"])
+def voice_upload_reference():
+    """上传参考音频用于音色克隆"""
+    if "file" not in request.files:
+        return jsonify({"success": False, "error": "未上传文件"}), 400
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"success": False, "error": "文件名为空"}), 400
+    description = request.form.get("description", "")
+    result = save_reference_audio(file.stream, file.filename, description)
+    return jsonify(result)
+
+
+@app.route("/api/voice/references")
+def voice_references():
+    """列出所有参考音频"""
+    return jsonify({"voices": list_reference_voices()})
+
+
+@app.route("/api/voice/reference/<voice_id>/delete", methods=["POST"])
+def voice_delete_reference(voice_id):
+    """删除参考音频"""
+    result = delete_reference_voice(voice_id)
+    return jsonify(result)
+
+
+@app.route("/api/voice/outputs")
+def voice_outputs():
+    """列出所有生成的音频文件"""
+    try:
+        files = []
+        for f in sorted(VOICE_OUTPUT_DIR.glob("*"), key=lambda x: x.stat().st_mtime, reverse=True):
+            if f.suffix.lower() in (".mp3", ".wav", ".ogg", ".flac", ".m4a"):
+                stat = f.stat()
+                files.append({
+                    "name": f.name,
+                    "path": str(f),
+                    "size": stat.st_size,
+                    "created": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stat.st_mtime)),
+                })
+        return jsonify({"files": files})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
 # ---------------------------------------------------------------------------
 # 启动
 # ---------------------------------------------------------------------------
@@ -1243,9 +1362,8 @@ def publish_stats():
     return jsonify(get_publish_stats())
 
 
-# ---------------------------------------------------------------------------
-# 启动
-# ---------------------------------------------------------------------------
+
+
 
 if __name__ == "__main__":
     # 不再自动保存默认配置到 config.json，路径始终从 DEFAULT_CONFIG + BASE_DIR 动态计算

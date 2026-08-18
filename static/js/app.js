@@ -1383,4 +1383,144 @@ switchPage = function(page) {
   if (page === 'analytics') {
     loadDashboardStats();
   }
+  if (page === 'voice') {
+    loadVoicePage();
+  }
 };
+
+
+// ===================== AI配音模块 =====================
+
+let _voiceSelectedId = "zh-CN-XiaoxiaoNeural";
+let _voiceVoicesCache = null;
+
+async function loadVoicePage() {
+  // Auto-load voices on first visit
+  if (!_voiceVoicesCache) {
+    try {
+      const r = await fetch('/api/voice/voices');
+      _voiceVoicesCache = await r.json();
+      renderVoiceChips();
+    } catch (e) {
+      console.error('load voices error', e);
+    }
+  }
+  loadVoiceOutputs();
+}
+
+function renderVoiceChips() {
+  const container = document.getElementById('voiceChipContainer');
+  if (!container) return;
+  const voices = (_voiceVoicesCache && _voiceVoicesCache['edge-tts']) || [];
+  if (voices.length === 0) {
+    container.innerHTML = '<span style="color:#667788;font-size:12px;">加载中...</span>';
+    return;
+  }
+  let html = '';
+  for (const v of voices) {
+    const selected = v.id === _voiceSelectedId;
+    html += `<button type="button" class="voice-chip ${selected ? 'active' : ''}" data-voice="${v.id}" onclick="selectVoiceChip(this)" style="
+      padding:6px 14px;border-radius:20px;border:1px solid ${selected ? '#4fc3f7' : '#334455'};
+      background:${selected ? 'rgba(79,195,247,0.15)' : '#0a1118'};color:${selected ? '#4fc3f7' : '#aabbcc'};
+      cursor:pointer;font-size:13px;transition:all .2s;">${v.name || v.id}</button>`;
+  }
+  container.innerHTML = html;
+}
+
+function selectVoiceChip(btn) {
+  _voiceSelectedId = btn.getAttribute('data-voice');
+  renderVoiceChips();
+}
+
+async function doVoiceSynthesize() {
+  const textEl = document.getElementById('voiceText');
+  const text = textEl.value.trim();
+  if (!text) { showToast('请先输入文案', 'warning'); textEl.focus(); return; }
+
+  const btn = document.getElementById('btnVoiceSynthesize');
+  const status = document.getElementById('voiceSynthesizeStatus');
+  const area = document.getElementById('voicePlayerArea');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ 生成中...';
+  status.textContent = '';
+  area.style.display = 'none';
+
+  try {
+    const payload = {
+      text: text,
+      engine: 'edge-tts',
+      voice: _voiceSelectedId,
+      rate: document.getElementById('voiceRate').value,
+    };
+
+    const r = await fetch('/api/voice/synthesize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await r.json();
+
+    if (data.success) {
+      status.innerHTML = '<span style="color:#4ade80;">✅ 生成成功！</span>';
+      const player = document.getElementById('voiceAudioPlayer');
+      const link = document.getElementById('voiceDownloadLink');
+      // Use a direct file URL via static serving workaround
+      player.src = '/api/outputs/file/' + encodeURIComponent(data.filename);
+      link.href = player.src;
+      link.download = data.filename;
+      area.style.display = 'block';
+      player.play().catch(()=>{});
+      showToast('语音生成成功', 'success');
+      loadVoiceOutputs();
+    } else {
+      const err = data.error || '未知错误';
+      status.innerHTML = '<span style="color:#f87171;">❌ ' + escapeHtml(err) + '</span>';
+      showToast('生成失败: ' + err, 'error');
+    }
+  } catch (e) {
+    status.innerHTML = '<span style="color:#f87171;">❌ 网络错误，请检查服务是否运行</span>';
+    showToast('请求出错: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🎙️ 一键生成语音';
+  }
+}
+
+async function loadVoiceOutputs() {
+  try {
+    const r = await fetch('/api/voice/outputs');
+    const data = await r.json();
+    const container = document.getElementById('voiceOutputList');
+    const files = (data.files || []).slice(0, 20);
+    if (files.length === 0) {
+      container.innerHTML = '<p style="color:#667788;font-size:13px;">暂无生成记录</p>';
+      return;
+    }
+    let html = '<div style="display:flex;flex-direction:column;gap:6px;">';
+    for (const f of files) {
+      const sizeKB = Math.round(f.size / 1024);
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;background:#0f1720;border-radius:6px;padding:8px 12px;">
+        <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;margin-right:10px;">
+          <div style="font-size:13px;">${escapeHtml(f.name)}</div>
+          <div style="font-size:11px;color:#8899aa;">${f.created} · ${sizeKB}KB</div>
+        </div>
+        <audio controls style="height:28px;width:180px;" src="/api/outputs/file/${encodeURIComponent(f.name)}"></audio>
+      </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+  } catch (e) {
+    console.error('loadVoiceOutputs error', e);
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function onVoiceEngineChange() {
+  // Kept for compatibility but simplified UI no longer calls this aggressively
+}
