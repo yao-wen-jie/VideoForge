@@ -159,6 +159,8 @@ CONFIG = load_config()
 
 def get_script_path(name):
     """获取脚本工具目录下的脚本路径"""
+    return BASE_DIR / "tools" / name
+    """获取脚本工具目录下的脚本路径"""
     root = Path(CONFIG["workflow_root"])
     return root / "04-脚本工具" / name
 

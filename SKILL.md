@@ -136,6 +136,12 @@ GET /api/dashboard/stats
 | 问题 | 解决 |
 |------|------|
 | 双击 start.bat 闪退 | 先运行 `check_env.bat` 看诊断报告 |
+| 智能导演/爆款复刻提示依赖缺失 | 此为存根版本，完整功能需安装 [OpenMontage](https://github.com/OpenMontage) |
+| AI脚本生成失败 | 未配置 DeepSeek API Key |
+| 镜头卡库为空 | 检查 `video-shotcraft/api/library.json` 是否存在 |
+| AI配音无声 | 确认网络连接（Edge-TTS 需联网） |
+|------|------|
+| 双击 start.bat 闪退 | 先运行 `check_env.bat` 看诊断报告 |
 | AI脚本生成失败 | 未配置 DeepSeek API Key |
 | 镜头卡库为空 | 检查 `video-shotcraft/api/library.json` 是否存在 |
 | AI配音无声 | 确认网络连接（Edge-TTS 需联网） |
