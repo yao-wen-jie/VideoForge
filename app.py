@@ -160,6 +160,11 @@ CONFIG = load_config()
 def get_script_path(name):
     """获取脚本工具目录下的脚本路径"""
     return BASE_DIR / "tools" / name
+
+
+def get_om_venv_python():
+    """获取脚本工具目录下的脚本路径"""
+    return BASE_DIR / "tools" / name
     """获取脚本工具目录下的脚本路径"""
     root = Path(CONFIG["workflow_root"])
     return root / "04-脚本工具" / name
@@ -191,6 +196,51 @@ SHOTCRAFT_LIBRARY_LOADED_AT = 0
 # ---------------------------------------------------------------------------
 
 def _run_subprocess(cmd, cwd=None, task_id=None):
+    """运行脚本并实时返回输出（本地辅助函数）"""
+    """运行脚本并实时返回输出"""
+    # 强制子进程使用 UTF-8 编码，避免 Windows 中文系统 GBK 崩溃
+    _env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+
+    def target():
+        try:
+            proc = subprocess.Popen(
+                [str(c) for c in cmd],
+                cwd=str(cwd) if cwd else None,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                env=_env,
+            )
+            TASKS[task_id]["pid"] = proc.pid
+            output = []
+            for line in proc.stdout:
+                line = line.rstrip()
+                output.append(line)
+                TASKS[task_id]["output"] = "\n".join(output)
+            proc.wait()
+            TASKS[task_id]["status"] = "done" if proc.returncode == 0 else "error"
+            TASKS[task_id]["returncode"] = proc.returncode
+        except Exception as e:
+            TASKS[task_id]["status"] = "error"
+            TASKS[task_id]["output"] += f"\n[ERROR] {e}"
+
+    if task_id:
+        TASKS[task_id] = {"status": "running", "output": "", "pid": None}
+        Thread(target=target, daemon=True).start()
+        return task_id
+    else:
+        result = subprocess.run(
+            [str(c) for c in cmd],
+            cwd=str(cwd) if cwd else None,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=_env,
+        )
+        return result
     """运行脚本并实时返回输出（本地辅助函数）"""
     """运行脚本并实时返回输出"""
     def target():

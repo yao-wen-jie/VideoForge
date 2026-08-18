@@ -20,7 +20,7 @@ from typing import Dict, List, Optional
 _BASE = Path(__file__).resolve().parent.parent
 _WORKSPACE = _BASE / "workspace"
 WORKFLOW_ROOT = _WORKSPACE
-SCRIPTS_DIR = WORKFLOW_ROOT / "04-脚本工具"
+SCRIPTS_DIR = _BASE / "tools"
 OUTPUTS_DIR = WORKFLOW_ROOT / "01-生成成果"
 TOPICS_DIR = WORKFLOW_ROOT / "02-选题策划"
 LOGS_DIR = WORKFLOW_ROOT / "06-运营日志"
